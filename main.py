@@ -1,6 +1,7 @@
 from Coach import Coach
-from othello.OthelloGame import OthelloGame as Game
-from othello.pytorch.NNet import NNetWrapper as nn
+#from othello.OthelloGame import OthelloGame as Game
+from kropki.KropkiGame import KropkiGame as Game
+from kropki.pytorch.NNet import NNetWrapper as nn
 from utils import *
 
 args = dotdict({
@@ -21,7 +22,7 @@ args = dotdict({
 })
 
 if __name__=="__main__":
-    g = Game(6)
+    g = Game()
     nnet = nn(g)
 
     if args.load_model:
