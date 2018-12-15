@@ -19,7 +19,7 @@ class KropkiGame(Game):
 
     def getNextState(self, board, player, action):
         b = KropkiBoard.clone(board)
-        b.place(action)
+        b.place(action, player)
         return (b, -player)
 
     def getValidMoves(self, board, player):

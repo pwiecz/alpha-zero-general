@@ -38,6 +38,8 @@ class KropkiBoard():
         self.NumEmptyFields -= 1
         nextEmptyField = self.Chains[index]
         prevEmptyField = self.Areas[index]
+        assert self.NumEmptyFields == 0 or self.Pieces[nextEmptyField] == EMPTY
+        assert self.NumEmptyFields == 0 or self.Pieces[prevEmptyField] == EMPTY
         self.Areas[nextEmptyField] = prevEmptyField
         self.Chains[prevEmptyField] = nextEmptyField
         if index == self.FirstEmptyField:
@@ -80,7 +82,7 @@ class KropkiBoard():
                 if iChain != jChain:
                     continue
                 jArea = (0 if jIindex == jChain else self.Areas[jIndex]) + DXS[sj] * (y + y + DYS[sj])
-                if iWinding - jWinding > 0:
+                if iArea - jArea > 0:
                     k = (separatedGroupEnds[i]+1)%8
                     while k != separatedGroupBegins[j]:
                         self._floodFillFrom(index + INDICES_AROUND[k], side)
@@ -243,7 +245,7 @@ class KropkiBoard():
         if piece1 == WHITE or piece1 == WHITE_WALL:
             return piece2 == WHITE or piece2 == WHITE_WALL
         if piece1 == BLACK or piece1 == BLACK_WALL:
-            return piece1 == BLACK or piece2 == BLACK_WALL
+            return piece2 == BLACK or piece2 == BLACK_WALL
         return False
 
     def _indexToX(index):
@@ -270,7 +272,7 @@ class KropkiBoard():
                 prevY = y if x > 0 else (y-1 if y > 0 else N-1)
                 index = KropkiBoard.coordsToIndex(x, y)
                 nextFree[index] = KropkiBoard.coordsToIndex(nextX, nextY)
-                nextFree[index] = KropkiBoard.coordsToIndex(prevX, prevY)
+                prevFree[index] = KropkiBoard.coordsToIndex(prevX, prevY)
         board.Chains = np.array(nextFree, dtype=np.uint16)
         board.Areas = np.array(prevFree, dtype=np.int16)
         board.FirstEmptyField = KropkiBoard.coordsToIndex(0, 0)
