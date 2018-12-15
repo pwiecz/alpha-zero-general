@@ -16,6 +16,16 @@ DXS = [-1, 0, 1, 1, 1, 0, -1, -1]
 DYS = [-1, -1, -1, 0, 1, 1, 1, 0]
 
 
+def _indexToX(index):
+    return index % (N + 2) - 1;
+def _indexToY(index):
+    return index / (N + 2) - 1
+def _indexToCoords(index):
+    return _indexToX(index), _indexToY(index)
+def _indexOnBoard(index):
+  x, y = _indexToCoords(index);
+  return x >= 0 and x < N and y >= 0 and y < N
+
 
 class KropkiBoard():
     def __init__(self):
@@ -38,14 +48,15 @@ class KropkiBoard():
         self.NumEmptyFields -= 1
         nextEmptyField = self.Chains[index]
         prevEmptyField = self.Areas[index]
-        assert self.NumEmptyFields == 0 or self.Pieces[nextEmptyField] == EMPTY
-        assert self.NumEmptyFields == 0 or self.Pieces[prevEmptyField] == EMPTY
+        assert self.NumEmptyFields == 0 or self.Pieces[nextEmptyField] == EMPTY, "_removeEmptyField(%d), NumEmpty: %d, nextEmptyField: %d, Pieces[nextEmptyField]: %d" % (index, self.NumEmptyFields, nextEmptyField, self.Pieces[nextEmptyField])
+        assert self.NumEmptyFields == 0 or self.Pieces[prevEmptyField] == EMPTY, "_removeEmptyField(%d), NumEmpty: %d, prevEmptyField: %d, Pieces[prevEmptyField]: %d" % (index, self.NumEmptyFields, prevEmptyField, self.Pieces[prevEmptyField])
         self.Areas[nextEmptyField] = prevEmptyField
         self.Chains[prevEmptyField] = nextEmptyField
         if index == self.FirstEmptyField:
             self.FirstEmptyField = nextEmptyField
 
     def _markSurroundedAreas(self, index, side):
+        assert _indexOnBoard(index), "_markSurroundedAreas((%d,%d),%d" % (_indexToX(index),_indexToY(index),side)
         piece = self.Pieces[index]
         separatedGroupBegins, separatedGroupEnds = [],[]
         requiredSeparation = 0
@@ -71,18 +82,19 @@ class KropkiBoard():
         if len(separatedGroupBegins) <= 1:
             return
 
-        y = KropkiBoard._indexToY(index)
+        y = _indexToY(index)
         for i,si in enumerate(separatedGroupBegins):
             iIndex = index + INDICES_AROUND[si]
             iChain = self.Chains[iIndex]
             iArea = (0 if iIndex == iChain else self.Areas[iIndex]) + DXS[si] * (y + y + DYS[si])
-            for j,sj in enumerate(separatedGroupBegins[i:]):
+            for j,sj in enumerate(separatedGroupBegins[i+1:]):
                 jIndex = index + INDICES_AROUND[sj]
-                jChain = Chains[jIndex];
+                jChain = self.Chains[jIndex];
                 if iChain != jChain:
                     continue
-                jArea = (0 if jIindex == jChain else self.Areas[jIndex]) + DXS[sj] * (y + y + DYS[sj])
-                if iArea - jArea > 0:
+                jArea = (0 if jIndex == jChain else self.Areas[jIndex]) + DXS[sj] * (y + y + DYS[sj])
+                assert iArea != jArea
+                if jArea - iArea > 0:
                     k = (separatedGroupEnds[i]+1)%8
                     while k != separatedGroupBegins[j]:
                         self._floodFillFrom(index + INDICES_AROUND[k], side)
@@ -94,6 +106,7 @@ class KropkiBoard():
                         k=(k+1)%8
 
     def _floodFillFrom(self, index, side):
+        assert _indexOnBoard(index), "_floodFillFrom((%d,%d), %d)" % (_indexToX(index), _indexToY(index), side)
         capture = False
         piece = self.Pieces[index]
         if piece == EMPTY:
@@ -155,8 +168,8 @@ class KropkiBoard():
                 if nextNeighbourChain != nextNeighbourIndex:
                     self._makeRoot(nextNeighbourIndex, nextNeighbourState, nextNeighbourChain)
             elif side == WHITE and neighbourState == WHITE_WALL and (
-                    nextNeighbourState == BLACK or nextNeighbourState == BLAC_WALL
-            ) and nextNextNeighbourState == WHITE_WALL and cain == nextNeighbourChain:
+                    nextNeighbourState == BLACK or nextNeighbourState == BLACK_WALL
+            ) and nextNextNeighbourState == WHITE_WALL and chain == nextNeighbourChain:
                 if nextNeighbourChain != nextNeighbourIndex:
                     self._makeRoot(nextNeighbourIndex, nextNeighbourState, nextNeighbourChain)
         self.Chains[index] = index
@@ -180,7 +193,7 @@ class KropkiBoard():
     def _reRootPiecesTo(self, sourceChain, targetChain, currentIndex, currentArea, chainDirection):
         self.Chains[currentIndex] = targetChain
         if targetChain != currentIndex:
-            y = KropkiBoard._indexToY(currentIndex)
+            y = _indexToY(currentIndex)
             dx = -DXS[chainDirection]
             dy = -DYS[chainDirection]
             currentArea += dx * (y+y+dy)
@@ -224,7 +237,7 @@ class KropkiBoard():
         self.Chains[index] = largestNeighbourChain
         self.Areas[largestNeighbourChain] += 1
         dx, dy = DXS[largestNeighbourChainI], DYS[largestNeighbourChainI]
-        y = KropkiBoard._indexToY(index)
+        y = _indexToY(index)
         area = (0 if largestNeighbourChainIndex == largestNeighbourChain else self.Areas[largestNeighbourChainIndex]) + dx * (y + y + dy)
         self.Areas[index] = area
         for neighbourI in neighbourChainIs:
@@ -247,12 +260,6 @@ class KropkiBoard():
         if piece1 == BLACK or piece1 == BLACK_WALL:
             return piece2 == BLACK or piece2 == BLACK_WALL
         return False
-
-    def _indexToX(index):
-        return index % (N + 2) - 1;
-
-    def _indexToY(index):
-        return index / (N + 2) - 1
 
     @classmethod
     def initEmpty(cls):
